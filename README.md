@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/SWE-Exp3.png" alt="SWE-Exp Logo" width="200"/>
+  <img src="assets/SWE-Exp3.png" alt="SWE-Exp Logo" width="300"/>
 </div>
 
 # SWE-Exp
@@ -13,7 +13,7 @@ A software engineering experimental framework based on Large Language Models (LL
   
 | Section | Description |
 |---------|-------------|
-| [🎯 Core: Experience Learning System](#-core-experience-learning-system) | Overview of the three-stage experience framework |
+| [🎯 Core: Experience Learning System](#-core-experience-learning-system) | Overview of the four-stage experience framework |
 | [📋 Stage 1: Issue Type Extraction](#-stage-1-issue-type-extraction) | Automatic categorization of software issues |
 | [📊 Stage 2: Experience Generation](#-stage-2-experience-generation) | Transform trajectories into reusable knowledge |
 | [🔍 Stage 3: Experience Reuse](#-stage-3-experience-reuse) | Two-phase experience selection and application |
@@ -31,7 +31,9 @@ A software engineering experimental framework based on Large Language Models (LL
 
 ## 🎯 Core: Experience Learning System
 
-The `moatless/experience` module implements a sophisticated three-stage experience-driven approach to software issue resolution.
+The `moatless/experience` module implements a sophisticated four-stage experience-driven approach to software issue resolution.
+
+Before using experiences, you first need to use this framework without experience to generate some trajectories.
 
 ## 📋 Stage 1: Issue Type Extraction
 
