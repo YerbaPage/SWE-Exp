@@ -197,19 +197,33 @@ The main execution pipeline that orchestrates the entire system:
 3. **Experience Integration**
    ```python
    # Two-phase experience selection
-   select_agent = SelectAgent(instance_id=instance_id, exp_path="<EXP_PATH>")
-   old_experiences = select_agent.select_workflow(n=1)
+    select_agent = SelectAgent(completion=completion_model, instance_id=instance_id,
+                            select_system_prompt=select_exp_system_prompt,
+                            user_prompt=select_exp_user_prompt, 
+                            exp_path='.json', 
+                            train_issue_type_path='.json', 
+                            test_issue_type_path='.json', 
+                            persist_dir=experience_path)
+    old_experiences = select_agent.select_workflow(n=1)
    ```
 
 4. **Search Tree Execution**
    ```python
    # Run intelligent search with experience guidance
-   search_tree = SearchTree.create(
-       message=instance["problem_statement"],
-       assistant=agent,
-       instructor=instructor,
-       max_iterations=max_iterations
-   )
+    search_tree = SearchTree.create(
+        message=instance["problem_statement"],
+        assistant=agent,
+        instructor=instructor,
+        file_context=file_context,
+        value_function=value_function,
+        discriminator=discriminator,
+        feedback_generator=feedback_generator,
+        max_finished_nodes=max_finish_nodes,
+        max_iterations=max_iterations,
+        max_expansions=max_expansions,
+        max_depth=max_depth,
+        persist_path=persist_path,
+    )
    finished_node = search_tree.run_search(select_agent, old_experiences)
    ```
 
