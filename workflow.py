@@ -140,9 +140,9 @@ def main(instance_id, max_iterations, max_finish_nodes, max_expansions, flag):
         select_agent = SelectAgent(completion=completion_model, instance_id=instance_id,
                                 select_system_prompt=select_exp_system_prompt,
                                 user_prompt=select_exp_user_prompt, 
-                                exp_path='/data/swebench/silin/SWE-Silin-IA-REACT-Exp/tmp/het/verified_experience_tree.json', 
-                                train_issue_type_path='/data/swebench/silin/SWE-Silin-IA-REACT-Exp/tmp/het/verified_issue_types_final.json', 
-                                test_issue_type_path='/data/swebench/silin/SWE-Silin-IA-REACT-Exp/tmp/het/verified_issue_types_final.json', 
+                                exp_path='tmp/het/verified_experience_tree.json', 
+                                train_issue_type_path='tmp/het/verified_issue_types_final.json', 
+                                test_issue_type_path='tmp/het/verified_issue_types_final.json', 
                                 persist_dir=experience_path)
         old_experiences = select_agent.select_workflow(n=1)
         logger.info(f"old_experiences:\n{json.dumps(old_experiences, indent=4)}")
