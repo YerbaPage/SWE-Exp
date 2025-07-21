@@ -69,7 +69,6 @@ class Instructor(BaseModel):
         messages.insert(0, {"role": "system", "content": self.system_prompt})
         message = f'<task>\n{self.task}\n{exp}\nYou MUST do code modification and finish the task within max {str(self.taken_actions)} actions.\n</task>\n This is the {node_id}-th actions.'
         messages.append({"role": "user", "content": message})
-        logger.info(f"messages:\n{messages}")
         messages.append({"role": "user", "content": self.output_format})
         try:
             response = self._completion._litellm_base_completion(

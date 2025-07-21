@@ -43,11 +43,6 @@ issue_agent = IssueAgent(
 # python extract_verified_issue_types_batch.py --start 0 --end 100
 ```
 
-**Workflow:**
-1. **Problem Analysis**: Parse issue descriptions and code context
-2. **Type Classification**: Generate structured issue type categories
-3. **Batch Storage**: Save results in JSON format for efficient lookup
-4. **Merge Processing**: Combine batch results into unified dataset
 
 ## 📊 Stage 2: Experience Generation
 
@@ -133,7 +128,7 @@ select_agent = SelectAgent(
 
 # Phase 1: Automatic similarity-based filtering (internal method)
 # Phase 2: Agent evaluation and final selection
-old_experiences = select_agent.select_workflow(n=5)
+old_experiences = select_agent.select_workflow(n=1)
 ```
 
 **Similarity Matching Logic:**
@@ -163,15 +158,9 @@ new_experiences = select_agent.generalize_workflow(
 **Agent Evaluation Process:**
 - **Context Analysis**: Deep understanding of current problem
 - **Experience Assessment**: Evaluate relevance and applicability
-- **Strategy Selection**: Choose most promising resolution approaches
+- **Strategy Selection**: Choose most promising comprehension experiences
 - **Confidence Scoring**: Rank experiences by expected effectiveness
 
-### Complete Experience Selection Pipeline
-
-```python
-# Full pipeline: Issue Type → Similarity → Agent Selection
-experiences = select_agent.select_workflow(n=3)
-```
 
 ## 🔧 Main Workflow (`workflow.py`)
 
@@ -210,10 +199,10 @@ The main execution pipeline that orchestrates the entire system:
 4. **Search Tree Execution**
    ```python
    # Run intelligent search with experience guidance
-    search_tree = SearchTree.create(
-        message=instance["problem_statement"],
-        assistant=agent,
-        instructor=instructor,
+   search_tree = SearchTree.create(
+       message=instance["problem_statement"],
+       assistant=agent,
+       instructor=instructor,
         file_context=file_context,
         value_function=value_function,
         discriminator=discriminator,
@@ -223,24 +212,93 @@ The main execution pipeline that orchestrates the entire system:
         max_expansions=max_expansions,
         max_depth=max_depth,
         persist_path=persist_path,
-    )
+   )
    finished_node = search_tree.run_search(select_agent, old_experiences)
    ```
 
+### Search Tree Four-Stage Process
+
+The search tree implements a sophisticated four-stage iterative process for problem resolution:
+
+1. **🎯 Selection Stage**
+   - **Node Selection**: Choose the most promising leaf node for expansion
+   - **Strategy**: Uses value function scores and exploration strategies
+   - **Criteria**: Balance between exploitation of high-value paths and exploration of new possibilities
+
+2. **🔄 Expansion Stage**
+   - **Action Generation**: Generate possible actions using the ActionAgent
+   - **Experience Integration**: Incorporate relevant past experiences into action planning
+   - **Instruction Guidance**: Use Instructor to provide contextual guidance for action selection
+
+3. **📊 Evaluation Stage**
+   - **Value Assessment**: Evaluate the quality of generated actions using ValueFunction
+   - **Feedback Integration**: Incorporate feedback from FeedbackGenerator
+   - **Scoring**: Assign scores to determine action viability and success probability
+
+4. **🏆 Discrimination Stage**
+   - **Multi-Agent Consensus**: Use multiple agents to evaluate and rank solutions
+   - **Trajectory Selection**: Choose the best resolution path among alternatives
+   - **Quality Assurance**: Ensure selected solutions meet quality criteria through collaborative judgment
+
 ### Usage
 
+#### Complete Pipeline Execution
+
 ```bash
-# Step 1: Extract issue types
+# Step 1: Extract issue types from problem statements
 python moatless/experience/exp_agent/extract_verified_issue_types_batch.py \
   --start 0 --end 500
 
-# Step 2: Generate experiences from trajectories
-# Run the main script in exp_agent.py (modify paths as needed)
+# Step 2: Generate experiences from historical trajectories
+# Run the main script in exp_agent.py (modify paths and your trajectory as needed)
+# The input must be in the SearchTree format
 python moatless/experience/exp_agent/exp_agent.py
 
-# Step 3: Run experience-driven resolution
-python workflow.py --instance_ids instances.txt --max_iterations 10
+# Step 3: Run experience-driven resolution workflow
+python workflow.py --instance_ids instance_id.txt --max_iterations 20
 ```
+
+#### Main Workflow Execution
+
+The primary entry point for running SWE-Exp is through `workflow.py`:
+
+```bash
+# Basic usage with instance ID file (without experience)
+python workflow.py --instance_ids instance_id.txt
+
+# Enable experience-driven resolution
+python workflow.py --instance_ids instance_id.txt --experience
+
+# Advanced usage with custom parameters
+python workflow.py \
+  --instance_ids instance_id.txt \
+  --max_iterations 20 \
+  --max_finished_nodes 3 \
+  --max_expansions 3 \
+  --experience
+```
+
+**Parameters:**
+- `--instance_ids`: Path to text file containing instance IDs (one per line)
+- `--max_iterations`: Maximum number of search tree iterations (default: 10)
+- `--max_finished_nodes`: Maximum number of completed solution nodes (default: 3)  
+- `--max_expansions`: Maximum number of expansions per state (default: 3)
+- `--experience`: Enable experience-driven resolution (flag to activate experience learning and transfer)
+  - **Without `--experience`**: Uses standard search tree resolution without historical experience guidance
+  - **With `--experience`**: Activates the three-stage experience system for enhanced problem-solving
+
+**Input Format:**
+Create an `instance_id.txt` file with one instance ID per line:
+```
+django__django-12345
+flask__flask-6789
+requests__requests-1011
+```
+
+**Output:**
+- **Trajectory Files**: Saved to `tmp_verified/trajectory/{instance_id}/`
+- **Experience Files**: Saved to `tmp_verified/experience/{instance_id}/`
+- **Prediction Results**: Appended to `prediction_verified.jsonl`
 
 ## 🏗️ Project Structure
 

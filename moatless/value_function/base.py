@@ -43,12 +43,8 @@ class ValueFunction(BaseModel):
             coding_reward, _ = self.coding_value_function.get_reward(node)
 
         messages = self.message_generator.generate(node) 
-        # logger.info(f"raw messages for value function:\n{messages}") 
-        # # 去掉feedback
-        # if len(messages) > 1:
-        #     messages = messages[:-1]
 
-        logger.info(f"messages for value function:\n{messages}")
+        # logger.info(f"messages for value function:\n{messages}")
         if messages is None:
             messages = []  # Ensure we have a valid list
 

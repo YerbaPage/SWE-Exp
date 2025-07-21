@@ -70,7 +70,7 @@ def add_data_to_jsonl(file_path, new_data):
     save_to_jsonl(data_list, file_path)
 
 
-def main(instance_id, max_iterations, max_finish_nodes, max_expansions):
+def main(instance_id, max_iterations, max_finish_nodes, max_expansions, flag):
     completion_model = CompletionModel(model="deepseek/deepseek-chat", temperature=0.7)
     discriminator_model = CompletionModel(model="deepseek/deepseek-chat", temperature=1)
     value_model = CompletionModel(model="deepseek/deepseek-chat", temperature=0.2)
@@ -136,17 +136,20 @@ def main(instance_id, max_iterations, max_finish_nodes, max_expansions):
         persist_path=persist_path,
     )
 
-    select_agent = SelectAgent(completion=completion_model, instance_id=instance_id,
-                            select_system_prompt=select_exp_system_prompt,
-                            user_prompt=select_exp_user_prompt, 
-                            exp_path='tmp/het/verified_experience_tree.json', 
-                            train_issue_type_path='tmp/het/verified_issue_types_final.json', 
-                            test_issue_type_path='tmp/het/verified_issue_types_final.json', 
-                            persist_dir=experience_path)
-    old_experiences = select_agent.select_workflow(n=1)
-    logger.info(f"old_experiences:\n{json.dumps(old_experiences, indent=4)}")
-    select_agent.persist({"old_experiences": old_experiences, "HET": {}, "trajectory": persist_path})
-
+    if flag:
+        select_agent = SelectAgent(completion=completion_model, instance_id=instance_id,
+                                select_system_prompt=select_exp_system_prompt,
+                                user_prompt=select_exp_user_prompt, 
+                                exp_path='/data/swebench/silin/SWE-Silin-IA-REACT-Exp/tmp/het/verified_experience_tree.json', 
+                                train_issue_type_path='/data/swebench/silin/SWE-Silin-IA-REACT-Exp/tmp/het/verified_issue_types_final.json', 
+                                test_issue_type_path='/data/swebench/silin/SWE-Silin-IA-REACT-Exp/tmp/het/verified_issue_types_final.json', 
+                                persist_dir=experience_path)
+        old_experiences = select_agent.select_workflow(n=1)
+        logger.info(f"old_experiences:\n{json.dumps(old_experiences, indent=4)}")
+        select_agent.persist({"old_experiences": old_experiences, "HET": {}, "trajectory": persist_path})
+    else:
+        select_agent = None
+        old_experiences = None
 
     finished_node = search_tree.run_search(select_agent, old_experiences)
     search_tree.persist(persist_path)
@@ -176,6 +179,8 @@ if __name__ == '__main__':
     parser.add_argument("--max_finished_nodes", type=int, default=2, help="Max finished nodes for tree search")
 
     parser.add_argument("--max_expansions", type=int, default=3, help="Max expansions for tree search")
+    
+    parser.add_argument("--experience", action="store_true", help="Whether to enable experience-based behavior (default: False)")
 
     args = parser.parse_args()
 
@@ -187,12 +192,12 @@ if __name__ == '__main__':
     if isinstance(instance_ids, list):
         for instance_id in instance_ids:
             instance_id = instance_id.strip()
-            main(instance_id, args.max_iterations, args.max_finished_nodes, args.max_expansions)
+            main(instance_id, args.max_iterations, args.max_finished_nodes, args.max_expansions, args.experience)
             import time
             time.sleep(3)
             logger.info("wait for half minute and then run the next instance")
     elif isinstance(instance_ids, str):
-        main(instance_ids, args.max_iterations, args.max_finished_nodes, args.max_expansions)
+        main(instance_ids, args.max_iterations, args.max_finished_nodes, args.max_expansions, args.experience)
     
 
     logger.info('All Finished')

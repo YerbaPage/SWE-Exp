@@ -65,10 +65,8 @@ class MessageHistoryGenerator(BaseModel):
             f"Generating message history for Node{node.node_id}: {self.message_history_type}"
         )
         generators = {
-            MessageHistoryType.SUMMARY: self._generate_summary_history,
             MessageHistoryType.REACT: self._generate_react_history,
             MessageHistoryType.MESSAGES: self._generate_message_history,
-            MessageHistoryType.MESSAGES_COMPACT: self._generate_compact_message_history,
         }
         start_idx = 0 if self.include_root_node else 1
         previous_nodes = node.get_trajectory()[start_idx:]
@@ -192,64 +190,6 @@ class MessageHistoryGenerator(BaseModel):
 
         return messages
 
-    def _generate_compact_message_history(
-        self, node: Node, previous_nodes: List["Node"]
-    ) -> List[dict[str, Any]]:
-        messages = [
-            ChatCompletionUserMessage(role="user", content=node.get_root().message)
-        ]
-
-        if len(previous_nodes) <= 1:
-            return messages
-
-        node_messages = self.get_node_messages(node)
-
-        tool_idx = 0
-        tokens = 0
-
-        for action, observation in node_messages:
-            tool_calls = []
-            tool_idx += 1
-            tool_call_id = f"tool_{tool_idx}"
-
-            exclude = None
-            content = None
-
-            if not self.thoughts_in_action:
-                exclude = {"thoughts"}
-                content = action.thoughts
-
-            tool_call = {
-                "id": tool_call_id,
-                "type": "function",
-                "function": {
-                    "name": action.name,
-                    "arguments": action.model_dump_json(exclude=exclude),
-                },
-            }
-
-            tool_calls.append(tool_call)
-
-            tokens += count_tokens(action.model_dump_json(exclude=exclude))
-
-            messages.append(
-                ChatCompletionAssistantMessage(
-                    role="assistant", tool_calls=tool_calls, content=content
-                )
-            )
-            messages.append(
-                ChatCompletionToolMessage(
-                    role="tool",
-                    tool_call_id=tool_call_id,
-                    content=f"Observation: {observation}",
-                )
-            )
-
-            tokens += count_tokens(observation)
-
-        logger.info(f"Generated {len(messages)} messages with {tokens} tokens")
-
-        return messages
 
     def _generate_react_history(
         self, node: "Node", previous_nodes: List["Node"]
@@ -298,74 +238,6 @@ class MessageHistoryGenerator(BaseModel):
         )
         logger.info(f"Generated {len(messages)} messages with {tokens} tokens")
         return messages
-
-    def _generate_summary_history(
-        self, node: Node, previous_nodes: List[Node]
-    ) -> List[AllMessageValues]:
-        formatted_history: List[str] = []
-        counter = 0
-
-        if self.include_root_node:
-            content = node.get_root().message
-            if not previous_nodes:
-                return [ChatCompletionUserMessage(role="user", content=content)]
-        else:
-            content = ""
-            if not previous_nodes:
-                return []
-
-        for i, previous_node in enumerate(previous_nodes):
-            if previous_node.action:
-                counter += 1
-                formatted_state = f"\n\n## Step {counter}\n"
-                if previous_node.action.thoughts:
-                    formatted_state += f"Thoughts: {previous_node.action.thoughts}\n"
-                formatted_state += f"Action: {previous_node.action.name}\n"
-                formatted_state += previous_node.action.to_prompt()
-
-                if previous_node.observation:
-                    if (
-                        hasattr(previous_node.observation, "summary")
-                        and previous_node.observation.summary
-                        and i < len(previous_nodes) - 1
-                    ):
-                        formatted_state += (
-                            f"\n\nObservation: {previous_node.observation.summary}"
-                        )
-                    else:
-                        formatted_state += (
-                            f"\n\nObservation: {previous_node.observation.message}"
-                        )
-                else:
-                    logger.warning(f"No output found for Node{previous_node.node_id}")
-                    formatted_state += "\n\nObservation: No output found."
-
-                formatted_history.append(formatted_state)
-
-        # content += "\n\nBelow is the history of previously executed actions and their observations.\n"
-        content += "<history>\n"
-        content += "\n".join(formatted_history)
-        content += "\n</history>\n\n"
-
-        if self.include_file_context:
-            content += "\n\nThe following code has already been viewed:\n"
-            content += node.file_context.create_prompt(
-                show_span_ids=False,
-                show_line_numbers=True,
-                exclude_comments=False,
-                show_outcommented_code=True,
-                outcomment_code_comment="... rest of the code",
-            )
-
-        if self.include_git_patch:
-            git_patch = node.file_context.generate_git_patch()
-            if git_patch:
-                content += "\n\nThe current git diff is:\n"
-                content += "```diff\n"
-                content += git_patch
-                content += "\n```"
-
-        return [ChatCompletionUserMessage(role="user", content=content)]
 
 
     def get_node_messages(self, node: "Node") -> List[tuple[ActionArguments | None, str]]:
@@ -423,12 +295,12 @@ class MessageHistoryGenerator(BaseModel):
 
         for i, previous_node in enumerate(reversed(previous_nodes)):
             current_messages = []
-            if previous_node.feedback_data:
-                logger.info(f"Feedback data for node {previous_node.node_id}:\n{previous_node.feedback_data.feedback}")
-            # 处理feedback（情况1：没有action_steps时）
+            # if previous_node.feedback_data:
+            #     logger.info(f"Feedback data for node {previous_node.node_id}:\n{previous_node.feedback_data.feedback}")
+            # Process feedback (case 1: no action_steps)
             logger.info(f"Now is node {previous_node.node_id}")
             if node.feedback_data and not feedback_added:
-                logger.info(f"Feedback data for current node {node.node_id}:\n{node.feedback_data.feedback}")
+                # logger.info(f"Feedback data for current node {node.node_id}:\n{node.feedback_data.feedback}")
                 current_messages.append(
                         (None, f"<suggestion>\n{node.feedback_data.feedback}\n</suggestion>")
                     )
@@ -437,7 +309,6 @@ class MessageHistoryGenerator(BaseModel):
                 logger.info(f"This is not another rollout, no feedback for current node {node.node_id}")
             if previous_node.action_steps:
                 for i, action_step in enumerate(previous_node.action_steps):
-                    # FIXME: Make consistent way of handling thoughts!
                     if i == 0:
                         action_step.action.thoughts = previous_node.assistant_message
 
@@ -609,7 +480,7 @@ class MessageHistoryGenerator(BaseModel):
                                 last_test_status = current_test_status
 
             if previous_node.action_steps and previous_node.feedback_data and not feedback_added:
-                logger.info(f"Adding feedback for previous node {previous_node.node_id}")
+                # logger.info(f"Adding feedback for previous node {previous_node.node_id}")
                 feedback_tokens = count_tokens(previous_node.feedback_data.feedback)
                 if total_tokens + feedback_tokens <= self.max_tokens:
                     total_tokens += feedback_tokens

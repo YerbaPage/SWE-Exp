@@ -106,21 +106,25 @@ class ActionAgent(BaseModel):
         action_args = [action.args_schema for action in self.actions]
 
         messages = self.message_generator.generate(node)
-        het = experiencer.get_json(experiencer.persist_dir)
-        persist_exp = {}
-        exp = 'Here are some experiences you can refer to:\n'
-        new_experiences = ''
-        if len(messages) == 1:
-            new_experiences += experiencer.generalize_workflow(old_experiences, type='perspective',
-                                                                history=None, cur_code=None,
-                                                                instruction=None)
-            persist_exp['perspective'] = new_experiences
+        if experiencer:
+            het = experiencer.get_json(experiencer.persist_dir)
+            persist_exp = {}
+            exp = 'Here are some experiences you can refer to:\n'
+            new_experiences = ''
+            if len(messages) == 1:
+                new_experiences += experiencer.generalize_workflow(old_experiences, type='perspective',
+                                                                    history=None, cur_code=None,
+                                                                    instruction=None)
+                persist_exp['perspective'] = new_experiences
+            else:
+                perspective = het['HET']['1']['perspective']
+                persist_exp['perspective'] = perspective
+                new_experiences += f'{perspective}\n'
+            
+            logger.info(f"===The experience is====: {new_experiences}")
         else:
-            perspective = het['HET']['1']['perspective']
-            persist_exp['perspective'] = perspective
-            new_experiences += f'{perspective}\n'
-        
-        logger.info(f"===The experience is====: {new_experiences}")
+            exp = ''
+            new_experiences = ''
         
         logger.info(f"Node{node.node_id}: Build action with {len(messages)} messages")
         try:
@@ -142,8 +146,7 @@ class ActionAgent(BaseModel):
             else:
                 ty_actions = None
                 logger.error('Invalid ty')
-            logger.info(f'reason is {reason}')
-            if ty == 'modify':
+            if experiencer and ty == 'modify':
                 code = "".join(m['content'] for m in messages if m['role'] == 'tool')
                 enhanced_instruction = experiencer.polish_workflow(old_experiences, type='modification',
                                                                     history=code, instruction=instruction)
@@ -174,15 +177,14 @@ class ActionAgent(BaseModel):
                                 if action_input:
                                     history += f'{action_input}\n'
                 instruction_input += f'\n\n<history>\n{history}\n</history>'
-            logger.info(f'The instruction input is:\n {instruction_input}')
 
             if self.use_few_shots:
                 instruction += self.generate_few_shots(ty_actions)
 
-
-            het['HET'][str(node.node_id)] = persist_exp
-            experiencer.persist(het)
-            logger.info("===new experiences have been persisted===")
+            if experiencer:
+                het['HET'][str(node.node_id)] = persist_exp
+                experiencer.persist(het)
+                logger.info("===new experiences have been persisted===")
 
             instruct_message = [{'role': 'user',  'content': instruction_input}]
 
