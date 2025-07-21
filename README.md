@@ -7,6 +7,28 @@ SWE-Exp: Experience-Driven Software Issue Resolution
 
 A software engineering experimental framework based on Large Language Models (LLMs) for automated code repair and optimization, featuring experience learning and transfer capabilities.
 
+## 📚 Table of Contents
+
+<div align="center">
+  
+| Section | Description |
+|---------|-------------|
+| [🎯 Core: Experience Learning System](#-core-experience-learning-system) | Overview of the three-stage experience framework |
+| [📋 Stage 1: Issue Type Extraction](#-stage-1-issue-type-extraction) | Automatic categorization of software issues |
+| [📊 Stage 2: Experience Generation](#-stage-2-experience-generation) | Transform trajectories into reusable knowledge |
+| [🔍 Stage 3: Experience Reuse](#-stage-3-experience-reuse) | Two-phase experience selection and application |
+| [🔧 Main Workflow](#-main-workflow-workflowpy) | Complete execution pipeline and usage |
+| [🏗️ Project Structure](#️-project-structure) | Repository organization and modules |
+| [📋 Requirements](#-requirements) | Dependencies and environment setup |
+| [🙏 Acknowledgements](#-acknowledgements) | Credits and references |
+
+</div>
+
+<div align="center">
+  <img src="assets/method.png" alt="SWE-Exp Method Overview" width="800"/>
+  <p><em>Figure 1: SWE-Exp Method Overview - Four-Stage Experience-Driven Framework</em></p>
+</div>
+
 ## 🎯 Core: Experience Learning System
 
 The `moatless/experience` module implements a sophisticated three-stage experience-driven approach to software issue resolution.
