@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/SWE-Exp3.png" alt="SWE-Exp Logo" width="300"/>
+  <img src="assets/SWE-Exp4.png" alt="SWE-Exp Logo" width="300"/>
 </div>
 
 # SWE-Exp
