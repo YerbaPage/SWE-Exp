@@ -14,10 +14,10 @@ A software engineering experimental framework based on Large Language Models (LL
 | Section | Description |
 |---------|-------------|
 | [🎯 Core: Experience Learning System](#-core-experience-learning-system) | Overview of the four-stage experience framework |
-| [📋 Stage 1: Issue Type Extraction](#-stage-1-issue-type-extraction) | Automatic categorization of software issues |
-| [📊 Stage 2: Experience Generation](#-stage-2-experience-generation) | Transform trajectories into reusable knowledge |
-| [🔍 Stage 3: Experience Reuse](#-stage-3-experience-reuse) | Two-phase experience selection and application |
-| [🔧 Main Workflow](#-main-workflow-workflowpy) | Complete execution pipeline and usage |
+| [📊 Stage 1: Trajectories Collection](#-stage-1-trajectories-collection-from-popular-open-source-repositories) | Collection of resolution trajectories without experience guidance |
+| [🔍 Stage 2: Experiences Extraction](#-stage-2-experiences-extraction) | Issue type extraction and trajectory experience mining |
+| [🔎 Stage 3: Experience Retrieval](#-stage-3-experience-retrieval) | Two-phase experience selection and filtering |
+| [🔧 Stage 4: Experience Reuse](#-stage-4-experience-reuse) | Application of retrieved experiences in new problem solving |
 | [🏗️ Project Structure](#️-project-structure) | Repository organization and modules |
 | [📋 Requirements](#-requirements) | Dependencies and environment setup |
 | [🙏 Acknowledgements](#-acknowledgements) | Credits and references |
@@ -31,19 +31,46 @@ A software engineering experimental framework based on Large Language Models (LL
 
 ## 🎯 Core: Experience Learning System
 
-The `moatless/experience` module implements a sophisticated four-stage experience-driven approach to software issue resolution.
+The `moatless/experience` module implements a sophisticated four-stage experience-driven approach to software issue resolution:
 
-Before using experiences, you first need to use this framework without experience to generate some trajectories.
+1. **Stage 1**: Trajectories Collection from Popular Open-Source Repositories
+2. **Stage 2**: Experiences Extraction (Issue Type Extraction + Trajectory Experience Mining)
+3. **Stage 3**: Experience Retrieval 
+4. **Stage 4**: Experience Reuse
 
-## 📋 Stage 1: Issue Type Extraction
+## 📊 Stage 1: Trajectories Collection from Popular Open-Source Repositories
 
-### Issue Type Generator (`exp_agent/extract_verified_issue_types_batch.py`)
-Automatically categorizes software issues to enable effective experience matching.
+The first stage involves collecting resolution trajectories from popular open-source repositories **without using any prior experiences**. This creates a foundational dataset of problem-solving paths.
+
+### Collection Process
+
+```python
+# Run the standard workflow without experience guidance
+python workflow.py --instance_ids instance_id.txt --max_iterations 20
+
+# This generates trajectory files without experience integration
+# Trajectories are saved to: tmp_verified/trajectory/{instance_id}/
+```
 
 **Key Features:**
-- **Intelligent Classification**: Analyzes problem statements to extract issue types
-- **Batch Processing**: Handles large datasets efficiently with resume capability
-- **Structured Output**: Generates categorized issue type mappings
+- **Pure Resolution Paths**: Collect trajectories without experience bias
+- **Diverse Problem Types**: Gather data from various software engineering issues
+- **Search Tree Format**: Store trajectories in structured SearchTree format
+- **Multiple Attempts**: Capture both successful and failed resolution attempts
+
+**Output:**
+- Trajectory files in SearchTree format
+- Resolution paths with action sequences
+- Success/failure indicators
+- Code modification records
+
+## 🔍 Stage 2: Experiences Extraction
+
+The second stage consists of two critical components that transform raw trajectories into structured, searchable knowledge.
+
+### 2.1 Issue Type Extraction
+
+**Purpose**: Extract issue types and descriptions as retrieval keys for experience matching.
 
 ```python
 from moatless.experience.exp_agent.extract_verified_issue_types_batch import IssueAgent
@@ -67,18 +94,15 @@ issue_agent = IssueAgent(
 # python extract_verified_issue_types_batch.py --start 0 --end 100
 ```
 
-
-## 📊 Stage 2: Experience Generation
-
-### Experience Generator (`exp_agent/exp_agent.py`)
-Transforms past successful/failed resolution attempts into reusable experience knowledge.
-
 **Key Features:**
-- **Trajectory Processing**: Analyzes historical resolution paths from search trees
-- **Dual Extraction**: Separates perspective insights and modification patterns
-- **Success/Failure Analysis**: Different prompts for successful vs. failed attempts
-- **Trajectory Selection criteria**: The successful trajectory is the shortest, and the failed trajectory is the longest.
-- **Structured Experience**: Converts trajectories into structured knowledge base
+- **Intelligent Classification**: Analyzes problem statements to extract issue types
+- **Batch Processing**: Handles large datasets efficiently with resume capability
+- **Structured Output**: Generates categorized issue type mappings
+- **Semantic Keys**: Creates searchable keys for experience retrieval
+
+### 2.2 Trajectory Experience Mining
+
+**Purpose**: Extract reusable experiences and patterns from collected trajectories.
 
 ```python
 from moatless.experience.exp_agent.exp_agent import ExpAgent
@@ -117,6 +141,12 @@ trajectory = get_trajectory(rollout)
 modify_exp = exp_agent.encode_modify(instance_id, rollout=trajectory[0], patch=patch)
 ```
 
+**Key Features:**
+- **Dual Extraction**: Separates perspective insights and modification patterns
+- **Success/Failure Analysis**: Different processing for successful vs. failed attempts
+- **Trajectory Selection Criteria**: Shortest path for success, longest for failure
+- **Structured Experience**: Converts trajectories into reusable knowledge base
+
 **Generation Process:**
 - **Trajectory Loading**: Load search tree trajectories from resolution attempts
 - **Success/Failure Classification**: Determine outcome and select appropriate prompts
@@ -124,7 +154,9 @@ modify_exp = exp_agent.encode_modify(instance_id, rollout=trajectory[0], patch=p
 - **Experience Structuring**: Format into standardized experience objects
 - **Knowledge Base Update**: Add new experiences to searchable repository
 
-## 🔍 Stage 3: Experience Reuse
+## 🔎 Stage 3: Experience Retrieval
+
+The third stage implements a sophisticated two-phase experience selection system to identify the most relevant experiences for current problems.
 
 ### Two-Phase Experience Selection
 
@@ -185,112 +217,68 @@ new_experiences = select_agent.generalize_workflow(
 - **Strategy Selection**: Choose most promising comprehension experiences
 - **Confidence Scoring**: Rank experiences by expected effectiveness
 
+## 🔧 Stage 4: Experience Reuse
 
-## 🔧 Main Workflow (`workflow.py`)
+The fourth stage applies retrieved experiences to guide the resolution of new software issues, integrating them into the search tree process.
 
-The main execution pipeline that orchestrates the entire system:
+### Experience Integration in Problem Solving
 
-### Workflow Steps
+```python
+# Main workflow with experience integration
+python workflow.py --instance_ids instance_id.txt --experience --max_iterations 20
+```
 
-1. **Environment Setup**
-   ```python
-   # Load instance and create repository
-   instance = get_moatless_instance(instance_id=instance_id)
-   repository = create_repository(instance)
-   ```
+### Search Tree Experience-Driven Process
 
-2. **Agent Initialization**
-   ```python
-   # Configure multi-agent system
-   agent = ActionAgent(...)
-   discriminator = AgentDiscriminator(n_agents=5, n_rounds=3)
-   instructor = Instructor(...)
-   ```
-
-3. **Experience Integration**
-   ```python
-   # Two-phase experience selection
-    select_agent = SelectAgent(completion=completion_model, instance_id=instance_id,
-                            select_system_prompt=select_exp_system_prompt,
-                            user_prompt=select_exp_user_prompt, 
-                            exp_path='.json', 
-                            train_issue_type_path='.json', 
-                            test_issue_type_path='.json', 
-                            persist_dir=experience_path)
-    old_experiences = select_agent.select_workflow(n=1)
-   ```
-
-4. **Search Tree Execution**
-   ```python
-   # Run intelligent search with experience guidance
-   search_tree = SearchTree.create(
-       message=instance["problem_statement"],
-       assistant=agent,
-       instructor=instructor,
-        file_context=file_context,
-        value_function=value_function,
-        discriminator=discriminator,
-        feedback_generator=feedback_generator,
-        max_finished_nodes=max_finish_nodes,
-        max_iterations=max_iterations,
-        max_expansions=max_expansions,
-        max_depth=max_depth,
-        persist_path=persist_path,
-   )
-   finished_node = search_tree.run_search(select_agent, old_experiences)
-   ```
-
-### Search Tree Four-Stage Process
-
-The search tree implements a sophisticated four-stage iterative process for problem resolution:
+The search tree implements a sophisticated four-stage iterative process that incorporates retrieved experiences:
 
 1. **🎯 Selection Stage**
-   - **Node Selection**: Choose the most promising leaf node for expansion
-   - **Strategy**: Uses value function scores and exploration strategies
-   - **Criteria**: Balance between exploitation of high-value paths and exploration of new possibilities
+   - **Experience-Guided Node Selection**: Choose promising leaf nodes based on experience insights
+   - **Strategy**: Balance between exploitation of high-value paths and exploration guided by past experiences
+   - **Criteria**: Incorporate experience-based heuristics for node selection
 
 2. **🔄 Expansion Stage**
-   - **Action Generation**: Generate possible actions using the ActionAgent
-   - **Experience Integration**: Incorporate relevant past experiences into action planning
-   - **Instruction Guidance**: Use Instructor to provide contextual guidance for action selection
+   - **Experience-Informed Action Generation**: Generate actions using insights from retrieved experiences
+   - **Action Guidance**: Use perspective experiences to inform action planning
+   - **Context Integration**: Apply modification experiences to suggest specific code changes
 
 3. **📊 Evaluation Stage**
-   - **Value Assessment**: Evaluate the quality of generated actions using ValueFunction
-   - **Feedback Integration**: Incorporate feedback from FeedbackGenerator
-   - **Scoring**: Assign scores to determine action viability and success probability
+   - **Experience-Enhanced Value Assessment**: Evaluate actions considering past success patterns
+   - **Feedback Integration**: Incorporate both real-time feedback and historical lessons
+   - **Pattern Recognition**: Identify similar scenarios from experience base
 
 4. **🏆 Discrimination Stage**
-   - **Multi-Agent Consensus**: Use multiple agents to evaluate and rank solutions
-   - **Trajectory Selection**: Choose the best resolution path among alternatives
-   - **Quality Assurance**: Ensure selected solutions meet quality criteria through collaborative judgment
+   - **Experience-Informed Consensus**: Use multi-agent evaluation enhanced by historical insights
+   - **Quality Assurance**: Apply learned quality criteria from past successful resolutions
+   - **Trajectory Selection**: Choose paths that align with proven successful patterns
 
-### Usage
+### Usage Examples
 
-#### Complete Pipeline Execution
+#### Complete Four-Stage Pipeline Execution
 
 ```bash
-# Step 1: Extract issue types from problem statements
+# Stage 1: Collect trajectories from repositories (without experience)
+python workflow.py --instance_ids instance_id.txt --max_iterations 20
+
+# Stage 2: Extract experiences from collected trajectories
+# 2.1: Extract issue types
 python moatless/experience/exp_agent/extract_verified_issue_types_batch.py \
   --start 0 --end 500
 
-# Step 2: Generate experiences from historical trajectories
-# Run the main script in exp_agent.py (modify paths and your trajectory as needed)
-# The input must be in the SearchTree format
+# 2.2: Mine trajectory experiences
 python moatless/experience/exp_agent/exp_agent.py
 
-# Step 3: Run experience-driven resolution workflow
-python workflow.py --instance_ids instance_id.txt --max_iterations 20
+# Stage 3 & 4: Run experience-driven resolution (retrieval + reuse)
+python workflow.py --instance_ids instance_id.txt --experience --max_iterations 20
 ```
 
-#### Main Workflow Execution
-
-The primary entry point for running SWE-Exp is through `workflow.py`:
+#### Main Workflow Parameters
 
 ```bash
-# Basic usage with instance ID file (without experience)
+# Basic usage without experience (Stage 1)
 python workflow.py --instance_ids instance_id.txt
 
-# Enable experience-driven resolution
+# Experience-driven resolution (Stage 3 & 4)
 python workflow.py --instance_ids instance_id.txt --experience
 
 # Advanced usage with custom parameters
@@ -307,9 +295,9 @@ python workflow.py \
 - `--max_iterations`: Maximum number of search tree iterations (default: 10)
 - `--max_finished_nodes`: Maximum number of completed solution nodes (default: 3)  
 - `--max_expansions`: Maximum number of expansions per state (default: 3)
-- `--experience`: Enable experience-driven resolution (flag to activate experience learning and transfer)
-  - **Without `--experience`**: Uses standard search tree resolution without historical experience guidance
-  - **With `--experience`**: Activates the three-stage experience system for enhanced problem-solving
+- `--experience`: Enable experience-driven resolution (Stages 3 & 4)
+  - **Without `--experience`**: Stage 1 - Pure trajectory collection
+  - **With `--experience`**: Stages 3 & 4 - Experience retrieval and reuse
 
 **Input Format:**
 Create an `instance_id.txt` file with one instance ID per line:
@@ -320,34 +308,37 @@ requests__requests-1011
 ```
 
 **Output:**
-- **Trajectory Files**: Saved to `tmp_verified/trajectory/{instance_id}/`
-- **Experience Files**: Saved to `tmp_verified/experience/{instance_id}/`
-- **Prediction Results**: Appended to `prediction_verified.jsonl`
+- **Stage 1**: Trajectory files saved to `tmp_verified/trajectory/{instance_id}/`
+- **Stage 2**: Experience files saved to `tmp_verified/experience/{instance_id}/`
+- **Stage 3 & 4**: Enhanced prediction results in `prediction_verified.jsonl`
 
 ## 🏗️ Project Structure
 
 ```
 SWE-Exp/
-├── workflow.py                           # Main execution pipeline
+├── workflow.py                           # Main execution pipeline (all stages)
 ├── moatless/
-│   ├── experience/                      # 🎯 Experience learning core
+│   ├── experience/                      # 🎯 Experience learning core (Stages 2-4)
 │   │   ├── exp_agent/                  # Experience processing agents
-│   │   │   ├── extract_verified_issue_types_batch.py  # Issue classification
-│   │   │   ├── select_agent.py         # Two-phase experience selection
-│   │   │   └── exp_agent.py            # Experience generation from trajectories
+│   │   │   ├── extract_verified_issue_types_batch.py  # Stage 2.1: Issue classification
+│   │   │   ├── select_agent.py         # Stage 3: Experience retrieval
+│   │   │   └── exp_agent.py            # Stage 2.2: Experience generation
 │   │   ├── prompts/                    # Instruction templates
 │   │   │   ├── exp_prompts.py          # Experience selection prompts
 │   │   │   └── agent_prompts.py        # Agent interaction prompts
-│   │   ├── instructor.py               # Guidance generation
+│   │   ├── instructor.py               # Stage 4: Guidance generation
 │   │   └── get_save_json.py            # Data persistence utilities
 │   ├── actions/                        # Code operation primitives
 │   ├── agent/                          # Multi-agent framework
-│   ├── search_tree.py                  # Tree search optimization
+│   ├── search_tree.py                  # Stage 1 & 4: Tree search optimization
 │   └── ...                             # Other modules
 └── verified_dataset_ids.txt             # Verified test instances
 ```
 
+## 📋 Requirements
+
+Dependencies and environment setup details would be specified here.
+
 ## 🙏 Acknowledgements
 
 We would like to thank Albert Örwall for open-sourcing SWE-Search, which serves as the foundation for our framework, SWE-Exp. This framework is built upon and references the excellent work at [@aorwall/moatless-tools](https://github.com/aorwall/moatless-tools/tree/main).
->>>>>>> SWE-Exp
