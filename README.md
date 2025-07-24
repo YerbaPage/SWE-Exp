@@ -337,7 +337,7 @@ SWE-Exp/
 
 ## 📋 Requirements
 
-Dependencies and environment setup details would be specified here.
+Dependencies and environment setup details has been specifed in requirements.txt.
 
 ## 🙏 Acknowledgements
 
