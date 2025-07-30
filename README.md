@@ -184,7 +184,8 @@ select_agent = SelectAgent(
 
 # Phase 1: Automatic similarity-based filtering (internal method)
 # Phase 2: Agent evaluation and final selection
-old_experiences = select_agent.select_workflow(n=1)
+# old_experiences = select_agent.select_workflow(n=1)
+id2score, topkids = select_agent.screening(pre_issues=issue_type_tmp, cur_issue={self.instance_id: test_issue_type[self.instance_id]})
 ```
 
 **Similarity Matching Logic:**
@@ -202,13 +203,7 @@ old_experiences = select_agent.select_workflow(n=1)
 # 2. LLM agent evaluation for final selection
 
 # Generate generalized experiences for current context
-new_experiences = select_agent.generalize_workflow(
-    old_experiences=old_experiences,
-    type='perspective',
-    history=None,
-    cur_code=None,
-    instruction=None
-)
+answer = select_agent.select_perspective(pre_issues=select_issues, cur_issue=cur_issue, k=n)
 ```
 
 **Agent Evaluation Process:**
