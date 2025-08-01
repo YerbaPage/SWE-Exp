@@ -3,7 +3,7 @@
 </div>
 
 # SWE-Exp
-SWE-Exp: Experience-Driven Software Issue Resolution [[📄 paper](http://arxiv.org/abs/2507.23361)]
+Code for paper: SWE-Exp: Experience-Driven Software Issue Resolution
 
 A software engineering experimental framework based on Large Language Models (LLMs) for automated code repair and optimization, featuring experience learning and transfer capabilities.
 
