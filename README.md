@@ -336,4 +336,4 @@ Dependencies and environment setup details has been specifed in requirements.txt
 
 ## 🙏 Acknowledgements
 
-We would like to thank Albert Örwall for open-sourcing SWE-Search, which serves as the foundation for our framework, SWE-Exp. This framework is built upon and references the excellent work at [@aorwall/moatless-tools](https://github.com/aorwall/moatless-tools/tree/main).
+We would like to thank Albert Örwall for open-sourcing SWE-Search, which serves as the foundation for our framework, SWE-Exp. This framework is built upon and references the excellent work at [@aorwall/moatless-tree-search](https://github.com/aorwall/moatless-tree-search).
